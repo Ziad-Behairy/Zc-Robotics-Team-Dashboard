@@ -1,0 +1,3360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZC Robotics Team - Strategic Management Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script>
+        // Fallback Chart.js initialization in case CDN fails
+        if (typeof Chart === 'undefined') {
+            console.log('Chart.js not loaded from CDN, using fallback...');
+            // Create a simple fallback chart system
+            window.Chart = function(ctx, config) {
+                console.log('Creating fallback chart for:', ctx.canvas.id);
+                
+                // Create a simple canvas-based chart as fallback
+                const canvas = ctx.canvas;
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                
+                // Draw a simple placeholder
+                ctx.fillStyle = '#1e3c72';
+                ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
+                ctx.fillStyle = '#FFD700';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Chart Loading...', canvas.width/2, canvas.height/2);
+                
+                return {
+                    data: config.data,
+                    update: function() { console.log('Chart update called'); },
+                    resize: function() { console.log('Chart resize called'); },
+                    destroy: function() { console.log('Chart destroy called'); }
+                };
+            };
+        }
+    </script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <style>
+        :root {
+            --primary-color: #1e3c72;
+            --secondary-color: #2a5298;
+            --accent-color: #FFD700;
+            --accent-dark: #FFA500;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-bg: rgba(255, 255, 255, 0.95);
+            --dark-text: #333;
+            --light-text: #666;
+            --border-color: #e0e0e0;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--dark-text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header Styles */
+        .dashboard-header {
+            background: var(--light-bg);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+            border-bottom: 3px solid var(--accent-color);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--accent-color), var(--accent-dark));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 24px;
+            margin-right: 15px;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .title-section h1 {
+            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: var(--light-text);
+            font-size: 14px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .dashboard-nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 12px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+        }
+
+        .nav-btn.active::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent-color);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .half-width {
+            grid-column: span 1;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--light-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--accent-dark));
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, var(--accent-color), var(--accent-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* KPI Styles */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-item {
+            text-align: center;
+            padding: 20px 15px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .kpi-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(30, 60, 114, 0.15);
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--light-text);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .kpi-change {
+            font-size: 11px;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .kpi-change.positive {
+            color: var(--success-color);
+        }
+
+        .kpi-change.negative {
+            color: var(--danger-color);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-top: 15px;
+        }
+
+        .chart-small {
+            height: 250px;
+        }
+
+        /* Progress Bars */
+        .progress-container {
+            margin: 15px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 24px;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* Team Structure */
+        .team-structure {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .team-division {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-color);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .team-division:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.15);
+        }
+
+        .division-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .member-count {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+
+        .division-roles {
+            font-size: 12px;
+            color: var(--light-text);
+            line-height: 1.4;
+        }
+
+        /* Timeline */
+        .timeline-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            overflow-x: auto;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .timeline-bar {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            min-width: 900px;
+        }
+
+        .phase-label {
+            width: 150px;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
+        .timeline-track {
+            flex: 1;
+            height: 35px;
+            background: #e9ecef;
+            border-radius: 18px;
+            position: relative;
+            margin: 0 15px;
+            overflow: hidden;
+        }
+
+        .timeline-progress {
+            height: 100%;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            transition: width 1s ease-in-out;
+            position: relative;
+        }
+
+        .probability-badge {
+            width: 80px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            background: rgba(30, 60, 114, 0.1);
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .phase-foundation { background: linear-gradient(90deg, #28a745, #20c997); }
+        .phase-development { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+        .phase-competition { background: linear-gradient(90deg, #dc3545, #e83e8c); }
+        .phase-legacy { background: linear-gradient(90deg, #6610f2, #6f42c1); }
+
+        /* Facility Layout */
+        .facility-layout {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .facility-room {
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            padding: 20px 15px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .facility-room::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(30, 60, 114, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .facility-room:hover::before {
+            left: 100%;
+        }
+
+        .facility-room:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(30, 60, 114, 0.3);
+        }
+
+        .room-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .room-size {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Statistics Overview */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 25px 20px;
+            text-align: center;
+            border-left: 4px solid var(--accent-color);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--light-text);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stat-trend {
+            font-size: 12px;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .trend-up {
+            color: var(--success-color);
+        }
+
+        .trend-down {
+            color: var(--danger-color);
+        }
+
+        /* Controls */
+        .edit-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .edit-btn {
+            padding: 10px 18px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .edit-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .export-btn {
+            background: var(--success-color);
+        }
+
+        .export-btn:hover {
+            background: #218838;
+        }
+
+        .danger-btn {
+            background: var(--danger-color);
+        }
+
+        .danger-btn:hover {
+            background: #c82333;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            margin: 5% auto;
+            position: relative;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--light-text);
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            color: var(--danger-color);
+            transform: scale(1.1);
+        }
+
+        .modal-header {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Form Elements */
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin: 8px 0;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .dashboard-nav {
+                justify-content: center;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .layout-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .timeline-bar {
+                min-width: 600px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .stats-overview {
+                grid-template-columns: 1fr;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            z-index: 3000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: var(--danger-color);
+        }
+
+        .notification.warning {
+            background: var(--warning-color);
+            color: var(--dark-text);
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: rgba(30, 60, 114, 0.05);
+        }
+
+        /* Export Options */
+        .export-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 10px 0;
+            min-width: 150px;
+            z-index: 1000;
+        }
+
+        .export-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 13px;
+        }
+
+        .export-option:hover {
+            background: rgba(30, 60, 114, 0.1);
+        }
+
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-20 { margin-bottom: 20px; }
+        .mt-20 { margin-top: 20px; }
+        .hidden { display: none; }
+        .flex { display: flex; }
+        .flex-between { justify-content: space-between; }
+        .flex-center { justify-content: center; align-items: center; }
+        .gap-10 { gap: 10px; }
+        .gap-20 { gap: 20px; }
+    </style>
+</head>
+<body>
+    <!-- Dashboard Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">ZC</div>
+                <div class="title-section">
+                    <h1>ZC Robotics Team</h1>
+                    <div class="subtitle">Strategic Management Platform | Zewail City University | <span id="currentDate"></span></div>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button class="edit-btn" onclick="saveAllData()" title="Save All Data">
+                    💾 Save
+                </button>
+                <button class="edit-btn export-btn" onclick="exportDashboard()" title="Export Dashboard">
+                    📊 Export
+                </button>
+                <button class="edit-btn" onclick="reloadAllCharts()" title="Reload All Charts">
+                    🔄 Reload Charts
+                </button>
+                <button class="edit-btn" onclick="toggleDebugInfo()" title="Show Debug Info">
+                    🐛 Debug
+                </button>
+                <nav class="dashboard-nav">
+                    <button class="nav-btn active" onclick="showSection('overview')">📊 Overview</button>
+                    <button class="nav-btn" onclick="showSection('performance')">📈 Performance</button>
+                    <button class="nav-btn" onclick="showSection('team')">👥 Team</button>
+                    <button class="nav-btn" onclick="showSection('budget')">💰 Budget</button>
+                    <button class="nav-btn" onclick="showSection('timeline')">📅 Timeline</button>
+                    <button class="nav-btn" onclick="showSection('facility')">🏢 Facility</button>
+                    <button class="nav-btn" onclick="showSection('reports')">📋 Reports</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Overview Section -->
+        <div id="overview" class="section active">
+            <!-- Key Statistics -->
+            <div class="stats-overview">
+                <div class="stat-card" onclick="editStatistic('members')">
+                    <div class="stat-number" id="stat-members">70</div>
+                    <div class="stat-label">Team Members Target</div>
+                    <div class="stat-trend trend-up">+600% from current</div>
+                </div>
+                <div class="stat-card" onclick="editStatistic('budget')">
+                    <div class="stat-number" id="stat-budget">$280K</div>
+                    <div class="stat-label">Total Investment</div>
+                    <div class="stat-trend trend-up">+400% ROI projected</div>
+                </div>
+                <div class="stat-card" onclick="editStatistic('competitions')">
+                    <div class="stat-number" id="stat-competitions">3</div>
+                    <div class="stat-label">Competition Divisions</div>
+                    <div class="stat-trend trend-up">+200% from previous</div>
+                </div>
+                <div class="stat-card" onclick="editStatistic('facility')">
+                    <div class="stat-number" id="stat-facility">1,050</div>
+                    <div class="stat-label">Facility Size (sqm)</div>
+                    <div class="stat-trend trend-up">World-class facility</div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- KPI Dashboard -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">2025-2026 Season KPIs</h3>
+                        <div class="card-icon">📊</div>
+                    </div>
+                    <div class="kpi-grid">
+                        <div class="kpi-item" onclick="editKPI('rank')">
+                            <div class="kpi-value" id="kpi-rank">Top 10</div>
+                            <div class="kpi-label">VEX U World Rank</div>
+                            <div class="kpi-change positive">Target achieved</div>
+                        </div>
+                        <div class="kpi-item" onclick="editKPI('success')">
+                            <div class="kpi-value" id="kpi-success">75%</div>
+                            <div class="kpi-label">Success Probability</div>
+                            <div class="kpi-change positive">+15% from baseline</div>
+                        </div>
+                        <div class="kpi-item" onclick="editKPI('awards')">
+                            <div class="kpi-value" id="kpi-awards">5+</div>
+                            <div class="kpi-label">Major Awards</div>
+                            <div class="kpi-change positive">Excellence target</div>
+                        </div>
+                        <div class="kpi-item" onclick="editKPI('followers')">
+                            <div class="kpi-value" id="kpi-followers">500K</div>
+                            <div class="kpi-label">Media Followers</div>
+                            <div class="kpi-change positive">+400% growth</div>
+                        </div>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editAllKPIs()">✏️ Edit KPIs</button>
+                        <button class="edit-btn export-btn" onclick="exportData('kpi')">📤 Export</button>
+                        <button class="edit-btn" onclick="resetKPIs()">🔄 Reset</button>
+                    </div>
+                </div>
+
+                <!-- Competition Performance Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Competition Performance Targets</h3>
+                        <div class="card-icon">🏆</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editPerformanceData()">✏️ Edit Data</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('performanceChart')">📤 Export Chart</button>
+                        <button class="edit-btn" onclick="animateChart('performanceChart')">🎬 Animate</button>
+                    </div>
+                </div>
+
+                <!-- Budget Overview -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Budget Distribution ($280,000)</h3>
+                        <div class="card-icon">💰</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editBudgetData()">✏️ Edit Budget</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('budgetChart')">📤 Export Chart</button>
+                        <button class="edit-btn" onclick="showBudgetDetails()">📋 Details</button>
+                    </div>
+                </div>
+
+                <!-- Risk Analysis -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Risk Assessment Matrix</h3>
+                        <div class="card-icon">⚠️</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editRiskData()">✏️ Edit Risks</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('riskChart')">📤 Export Chart</button>
+                        <button class="edit-btn" onclick="generateRiskReport()">📋 Report</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Section -->
+        <div id="performance" class="section">
+            <div class="dashboard-grid">
+                <!-- Phase Success Probability -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Phase Success Probability</h3>
+                        <div class="card-icon">📈</div>
+                    </div>
+                    <div id="phaseProgress">
+                        <!-- Progress bars will be generated by JavaScript -->
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editPhaseData()">✏️ Edit Phases</button>
+                        <button class="edit-btn export-btn" onclick="exportPhaseData()">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Growth Trajectory -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Growth Trajectory (3 Years)</h3>
+                        <div class="card-icon">📊</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editGrowthData()">✏️ Edit Growth</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('growthChart')">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Competition Analysis -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3 class="card-title">Competition Performance Analysis</h3>
+                        <div class="card-icon">🏆</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="competitionAnalysisChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editCompetitionAnalysis()">✏️ Edit Analysis</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('competitionAnalysisChart')">📤 Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Structure Section -->
+        <div id="team" class="section">
+            <div class="dashboard-grid">
+                <!-- Team Overview -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3 class="card-title">Team Structure Overview (70 Members)</h3>
+                        <div class="card-icon">👥</div>
+                    </div>
+                    <div class="team-structure" id="teamStructure">
+                        <!-- Team divisions will be generated by JavaScript -->
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editTeamStructure()">✏️ Edit Structure</button>
+                        <button class="edit-btn" onclick="addTeamDivision()">➕ Add Division</button>
+                        <button class="edit-btn export-btn" onclick="exportTeamData()">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Team Composition Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Team Composition</h3>
+                        <div class="card-icon">📊</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="teamChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editTeamChart()">✏️ Edit Chart</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('teamChart')">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Demographics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Team Demographics</h3>
+                        <div class="card-icon">👥</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="demographicsChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editDemographics()">✏️ Edit Demographics</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('demographicsChart')">📤 Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Section -->
+        <div id="budget" class="section">
+            <div class="dashboard-grid">
+                <!-- Revenue Sources -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Revenue Sources</h3>
+                        <div class="card-icon">💵</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editRevenueData()">✏️ Edit Revenue</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('revenueChart')">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- 5-Year Financial Projection -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">5-Year Financial Projection</h3>
+                        <div class="card-icon">📈</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="projectionChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editProjectionData()">✏️ Edit Projection</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('projectionChart')">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Budget Breakdown Table -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3 class="card-title">Detailed Budget Breakdown</h3>
+                        <div class="card-icon">📋</div>
+                    </div>
+                    <div id="budgetTable">
+                        <!-- Budget table will be generated by JavaScript -->
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editBudgetTable()">✏️ Edit Table</button>
+                        <button class="edit-btn" onclick="addBudgetItem()">➕ Add Item</button>
+                        <button class="edit-btn export-btn" onclick="exportBudgetTable()">📤 Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Section -->
+        <div id="timeline" class="section">
+            <div class="card full-width">
+                <div class="card-header">
+                    <h3 class="card-title">Implementation Timeline (12 Months)</h3>
+                    <div class="card-icon">📅</div>
+                </div>
+                <div class="timeline-container">
+                    <div class="timeline-header">
+                        <h4>Project Phases Progress</h4>
+                        <div class="flex gap-10">
+                            <button class="edit-btn" onclick="updateTimeline()">🔄 Update</button>
+                            <button class="edit-btn export-btn" onclick="exportTimeline()">📤 Export</button>
+                        </div>
+                    </div>
+                    <div id="timelineContent">
+                        <!-- Timeline content will be generated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Milestone Tracker -->
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Key Milestones</h3>
+                        <div class="card-icon">🎯</div>
+                    </div>
+                    <div id="milestoneTracker">
+                        <!-- Milestones will be generated by JavaScript -->
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editMilestones()">✏️ Edit Milestones</button>
+                        <button class="edit-btn" onclick="addMilestone()">➕ Add Milestone</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Timeline Chart</h3>
+                        <div class="card-icon">📊</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn export-btn" onclick="exportChart('timelineChart')">📤 Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Facility Section -->
+        <div id="facility" class="section">
+            <div class="dashboard-grid">
+                <!-- Facility Layout -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3 class="card-title">ZC Robotics Center Layout (1,050 sqm)</h3>
+                        <div class="card-icon">🏢</div>
+                    </div>
+                    <div class="facility-layout">
+                        <div class="layout-grid" id="facilityLayout">
+                            <!-- Facility rooms will be generated by JavaScript -->
+                        </div>
+                        <div class="mt-20">
+                            <p><strong>Total Area:</strong> 1,050 sqm | <strong>Investment:</strong> $150,000 | <strong>Utilization:</strong> 85%</p>
+                        </div>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editFacilityLayout()">✏️ Edit Layout</button>
+                        <button class="edit-btn" onclick="addFacilityRoom()">➕ Add Room</button>
+                        <button class="edit-btn export-btn" onclick="exportFacilityData()">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Equipment Investment -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Equipment Investment</h3>
+                        <div class="card-icon">🔧</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="equipmentChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editEquipmentData()">✏️ Edit Equipment</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('equipmentChart')">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Utilization Metrics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Facility Utilization</h3>
+                        <div class="card-icon">📊</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="utilizationChart"></canvas>
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="editUtilizationData()">✏️ Edit Utilization</button>
+                        <button class="edit-btn export-btn" onclick="exportChart('utilizationChart')">📤 Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports" class="section">
+            <div class="dashboard-grid">
+                <!-- Executive Summary -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3 class="card-title">Executive Summary Report</h3>
+                        <div class="card-icon">📋</div>
+                    </div>
+                    <div id="executiveSummary">
+                        <!-- Executive summary will be generated by JavaScript -->
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn" onclick="generateExecutiveSummary()">🔄 Regenerate</button>
+                        <button class="edit-btn export-btn" onclick="exportExecutiveSummary()">📤 Export PDF</button>
+                        <button class="edit-btn" onclick="emailReport()">📧 Email</button>
+                    </div>
+                </div>
+
+                <!-- Performance Report -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Performance Report</h3>
+                        <div class="card-icon">📊</div>
+                    </div>
+                    <div id="performanceReport">
+                        <!-- Performance report will be generated by JavaScript -->
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn export-btn" onclick="exportPerformanceReport()">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Financial Report -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Financial Report</h3>
+                        <div class="card-icon">💰</div>
+                    </div>
+                    <div id="financialReport">
+                        <!-- Financial report will be generated by JavaScript -->
+                    </div>
+                    <div class="edit-controls">
+                        <button class="edit-btn export-btn" onclick="exportFinancialReport()">📤 Export</button>
+                    </div>
+                </div>
+
+                <!-- Data Export Center -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3 class="card-title">Data Export Center</h3>
+                        <div class="card-icon">📤</div>
+                    </div>
+                    <div class="export-center">
+                        <div class="form-grid">
+                            <button class="edit-btn export-btn" onclick="exportAllCharts()">📊 Export All Charts</button>
+                            <button class="edit-btn export-btn" onclick="exportAllData()">💾 Export All Data</button>
+                            <button class="edit-btn export-btn" onclick="exportPresentationPack()">🎯 Presentation Pack</button>
+                            <button class="edit-btn export-btn" onclick="exportExcel()">📈 Excel Workbook</button>
+                            <button class="edit-btn export-btn" onclick="exportJSON()">🔧 JSON Data</button>
+                            <button class="edit-btn export-btn" onclick="exportCSV()">📋 CSV Files</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Edit Data</h3>
+            </div>
+            <div id="modalContent">
+                <!-- Modal content will be populated by JavaScript -->
+            </div>
+            <div class="flex flex-between mt-20">
+                <button class="edit-btn" onclick="closeModal()">❌ Cancel</button>
+                <div class="flex gap-10">
+                    <button class="edit-btn" onclick="resetModalData()">🔄 Reset</button>
+                    <button class="edit-btn export-btn" onclick="saveModalChanges()">✅ Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        // Global variables and data storage
+        let charts = {};
+        let dashboardData = {};
+        let currentEditContext = null;
+
+        // Initialize dashboard on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Chart.js loaded properly
+            if (typeof Chart === 'undefined') {
+                showNotification('Chart.js library not loaded. Charts may not display properly.', 'warning');
+                // Try to reinitialize after a delay
+                setTimeout(initializeDashboard, 2000);
+            } else {
+                initializeDashboard();
+            }
+        });
+
+        function initializeDashboard() {
+            console.log('Initializing dashboard...');
+            
+            // Set current date
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+            
+            // Load saved data or initialize default data
+            loadDashboardData();
+            
+            // Initialize all charts with error handling
+            try {
+                if (typeof Chart !== 'undefined') {
+                    initializeAllCharts();
+                    showNotification('Dashboard initialized successfully!', 'success');
+                } else {
+                    showNotification('Charts unavailable - library loading issue', 'error');
+                    // Show data in alternative format
+                    showAlternativeData();
+                }
+            } catch (error) {
+                console.error('Chart initialization error:', error);
+                showNotification('Chart initialization failed: ' + error.message, 'error');
+                showAlternativeData();
+            }
+            
+            // Generate dynamic content
+            generatePhaseProgress();
+            generateTeamStructure();
+            generateBudgetTable();
+            generateTimelineContent();
+            generateMilestoneTracker();
+            generateFacilityLayout();
+            generateReports();
+        }
+
+        function showAlternativeData() {
+            // Show data in table format when charts fail
+            const chartContainers = document.querySelectorAll('.chart-container');
+            chartContainers.forEach(container => {
+                const canvas = container.querySelector('canvas');
+                if (canvas) {
+                    const chartType = canvas.id;
+                    container.innerHTML = `
+                        <div style="padding: 20px; text-align: center; background: #f8f9ff; border-radius: 8px;">
+                            <h4 style="color: #1e3c72; margin-bottom: 15px;">📊 ${getChartTitle(chartType)}</h4>
+                            <p style="color: #666;">Chart visualization unavailable</p>
+                            <button class="edit-btn" onclick="retryChartLoad('${chartType}')" style="margin-top: 10px;">
+                                🔄 Retry Chart Load
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function getChartTitle(chartId) {
+            const titles = {
+                'performanceChart': 'Performance Metrics',
+                'budgetChart': 'Budget Distribution',
+                'riskChart': 'Risk Assessment',
+                'growthChart': 'Growth Trajectory',
+                'teamChart': 'Team Composition',
+                'demographicsChart': 'Team Demographics',
+                'revenueChart': 'Revenue Sources',
+                'projectionChart': 'Financial Projections',
+                'competitionAnalysisChart': 'Competition Analysis',
+                'timelineChart': 'Project Timeline',
+                'equipmentChart': 'Equipment Investment',
+                'utilizationChart': 'Facility Utilization'
+            };
+            return titles[chartId] || 'Data Visualization';
+        }
+
+        function retryChartLoad(chartId) {
+            const container = document.querySelector(`#${chartId}`).parentElement;
+            container.innerHTML = `<canvas id="${chartId}"></canvas>`;
+            
+            try {
+                // Retry initializing specific chart
+                switch(chartId) {
+                    case 'performanceChart':
+                        initializePerformanceChart();
+                        break;
+                    case 'budgetChart':
+                        initializeBudgetChart();
+                        break;
+                    case 'riskChart':
+                        initializeRiskChart();
+                        break;
+                    case 'growthChart':
+                        initializeGrowthChart();
+                        break;
+                    case 'teamChart':
+                        initializeTeamChart();
+                        break;
+                    case 'demographicsChart':
+                        initializeDemographicsChart();
+                        break;
+                    case 'revenueChart':
+                        initializeRevenueChart();
+                        break;
+                    case 'projectionChart':
+                        initializeProjectionChart();
+                        break;
+                    case 'competitionAnalysisChart':
+                        initializeCompetitionAnalysisChart();
+                        break;
+                    case 'timelineChart':
+                        initializeTimelineChart();
+                        break;
+                    case 'equipmentChart':
+                        initializeEquipmentChart();
+                        break;
+                    case 'utilizationChart':
+                        initializeUtilizationChart();
+                        break;
+                }
+                showNotification(`${chartId} loaded successfully!`, 'success');
+            } catch (error) {
+                showNotification(`Failed to load ${chartId}: ${error.message}`, 'error');
+            }
+        }
+
+        function loadDashboardData() {
+            // Try to load from localStorage, otherwise use defaults
+            const savedData = localStorage.getItem('zcRoboticsData');
+            if (savedData) {
+                dashboardData = JSON.parse(savedData);
+                showNotification('Previous data loaded successfully!', 'success');
+            } else {
+                // Initialize default data
+                dashboardData = {
+                    kpis: {
+                        rank: 'Top 10',
+                        success: 75,
+                        awards: 5,
+                        followers: '500K'
+                    },
+                    statistics: {
+                        members: 70,
+                        budget: 280000,
+                        competitions: 3,
+                        facility: 1050
+                    },
+                    phases: [
+                        { name: 'Foundation', progress: 90, probability: 90, period: 'Jun-Sep 2025' },
+                        { name: 'Development', progress: 85, probability: 85, period: 'Oct 2025-Feb 2026' },
+                        { name: 'Competition', progress: 75, probability: 75, period: 'Mar-May 2026' },
+                        { name: 'Legacy', progress: 95, probability: 95, period: 'Jun+ 2026' }
+                    ],
+                    teamDivisions: [
+                        { name: 'Executive Board', members: 5, roles: 'Strategic leadership, vision setting' },
+                        { name: 'VEX Robotics Division', members: 15, roles: 'Competition robotics, technical development' },
+                        { name: 'RoboCup Division', members: 12, roles: 'AI robotics, autonomous systems' },
+                        { name: 'NASA Competition', members: 8, roles: 'Space challenges, advanced systems' },
+                        { name: 'Technical Support', members: 12, roles: 'Manufacturing, programming, electronics' },
+                        { name: 'Non-Technical Support', members: 13, roles: 'Media, fundraising, operations' },
+                        { name: 'Future Expansion', members: 5, roles: 'New competitions, research projects' }
+                    ],
+                    budgetItems: [
+                        { category: 'Infrastructure', amount: 150000, percentage: 54 },
+                        { category: 'Equipment', amount: 80000, percentage: 29 },
+                        { category: 'Competition', amount: 30000, percentage: 11 },
+                        { category: 'Team Development', amount: 15000, percentage: 5 },
+                        { category: 'Contingency', amount: 5000, percentage: 2 }
+                    ],
+                    facilityRooms: [
+                        { name: 'Main Workshop', size: 400, purpose: 'Manufacturing & Assembly' },
+                        { name: 'Electronics Lab', size: 200, purpose: 'PCB Design & Testing' },
+                        { name: 'Practice Fields', size: 300, purpose: 'Competition Training' },
+                        { name: 'Meeting Rooms', size: 100, purpose: 'Strategy & Presentations' },
+                        { name: 'Storage', size: 30, purpose: 'Equipment & Materials' },
+                        { name: 'Utilities', size: 20, purpose: 'Support Systems' }
+                    ],
+                    milestones: [
+                        { name: 'Team Formation Complete', date: '2025-09-15', status: 'pending' },
+                        { name: 'Facility Setup Complete', date: '2025-10-30', status: 'pending' },
+                        { name: 'First Robot Prototype', date: '2025-12-15', status: 'pending' },
+                        { name: 'Local Competition', date: '2026-03-15', status: 'pending' },
+                        { name: 'World Championship', date: '2026-05-10', status: 'pending' }
+                    ]
+                };
+                saveAllData();
+            }
+        }
+
+        function saveAllData() {
+            try {
+                localStorage.setItem('zcRoboticsData', JSON.stringify(dashboardData));
+                showNotification('All data saved successfully!', 'success');
+            } catch (error) {
+                showNotification('Error saving data: ' + error.message, 'error');
+            }
+        }
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.add('active');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Refresh charts for the active section
+            setTimeout(() => {
+                Object.values(charts).forEach(chart => {
+                    if (chart && chart.resize) {
+                        chart.resize();
+                    }
+                });
+            }, 100);
+        }
+
+        function initializeAllCharts() {
+            console.log('Starting chart initialization...');
+            
+            const chartInitializers = [
+                { name: 'Performance', func: initializePerformanceChart },
+                { name: 'Budget', func: initializeBudgetChart },
+                { name: 'Risk', func: initializeRiskChart },
+                { name: 'Growth', func: initializeGrowthChart },
+                { name: 'Team', func: initializeTeamChart },
+                { name: 'Demographics', func: initializeDemographicsChart },
+                { name: 'Revenue', func: initializeRevenueChart },
+                { name: 'Projection', func: initializeProjectionChart },
+                { name: 'Competition Analysis', func: initializeCompetitionAnalysisChart },
+                { name: 'Timeline', func: initializeTimelineChart },
+                { name: 'Equipment', func: initializeEquipmentChart },
+                { name: 'Utilization', func: initializeUtilizationChart }
+            ];
+
+            let successCount = 0;
+            let failCount = 0;
+
+            chartInitializers.forEach(({ name, func }) => {
+                try {
+                    func();
+                    console.log(`✅ ${name} chart initialized successfully`);
+                    successCount++;
+                } catch (error) {
+                    console.error(`❌ Failed to initialize ${name} chart:`, error);
+                    failCount++;
+                }
+            });
+
+            console.log(`Chart initialization complete: ${successCount} success, ${failCount} failed`);
+            
+            if (failCount > 0) {
+                showNotification(`${failCount} charts failed to load. Click retry buttons to reload.`, 'warning');
+            }
+        }
+
+        function initializePerformanceChart() {
+            const canvas = document.getElementById('performanceChart');
+            if (!canvas) {
+                console.error('Performance chart canvas not found');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            charts.performance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['VEX U Ranking', 'RoboCup Qualification', 'NASA Competition', 'Awards Won', 'Media Reach', 'Team Growth'],
+                    datasets: [{
+                        label: 'Target Performance',
+                        data: [90, 60, 80, 85, 75, 95],
+                        backgroundColor: 'rgba(30, 60, 114, 0.2)',
+                        borderColor: 'rgba(30, 60, 114, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(255, 215, 0, 1)',
+                        pointBorderColor: 'rgba(255, 165, 0, 1)',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                color: '#666'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Performance chart created successfully');
+        }
+
+        function initializeBudgetChart() {
+            const canvas = document.getElementById('budgetChart');
+            if (!canvas) {
+                console.error('Budget chart canvas not found');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const budgetData = dashboardData.budgetItems;
+            
+            charts.budget = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: budgetData.map(item => item.category),
+                    datasets: [{
+                        data: budgetData.map(item => item.amount),
+                        backgroundColor: [
+                            '#1e3c72',
+                            '#2a5298',
+                            '#FFD700',
+                            '#FFA500',
+                            '#ff6b6b'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const percentage = ((value / 280000) * 100).toFixed(1);
+                                    return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Budget chart created successfully');
+        }
+
+        function initializeRiskChart() {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            charts.risk = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Risk Factors',
+                        data: [
+                            {x: 50, y: 80, r: 15},
+                            {x: 30, y: 90, r: 12},
+                            {x: 60, y: 60, r: 10},
+                            {x: 70, y: 40, r: 8},
+                            {x: 20, y: 50, r: 6}
+                        ],
+                        backgroundColor: 'rgba(255, 215, 0, 0.7)',
+                        borderColor: 'rgba(255, 165, 0, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function() {
+                                    return 'Risk Assessment';
+                                },
+                                label: function(context) {
+                                    const riskNames = ['Technical Challenges', 'Funding Shortfalls', 'Team Management', 'Competition Changes', 'Equipment Failures'];
+                                    return `${riskNames[context.dataIndex]}: ${context.parsed.x}% probability, ${context.parsed.y}% impact`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Probability (%)',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Impact (%)',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeGrowthChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            charts.growth = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Year 1 (2025-26)', 'Year 2 (2026-27)', 'Year 3 (2027-28)'],
+                    datasets: [
+                        {
+                            label: 'Team Members',
+                            data: [70, 100, 150],
+                            borderColor: '#1e3c72',
+                            backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#1e3c72',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Budget ($K)',
+                            data: [30, 45, 65],
+                            borderColor: '#FFD700',
+                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#FFD700',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Competitions',
+                            data: [3, 5, 8],
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointBackgroundColor: '#28a745',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Growth Metrics',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeTeamChart() {
+            const ctx = document.getElementById('teamChart').getContext('2d');
+            const teamData = dashboardData.teamDivisions;
+            
+            charts.team = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: teamData.map(division => division.name.replace(' Division', '').replace(' Team', '')),
+                    datasets: [{
+                        label: 'Members',
+                        data: teamData.map(division => division.members),
+                        backgroundColor: [
+                            '#1e3c72',
+                            '#2a5298',
+                            '#FFD700',
+                            '#FFA500',
+                            '#28a745',
+                            '#dc3545',
+                            '#6610f2'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Members',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeDemographicsChart() {
+            const ctx = document.getElementById('demographicsChart').getContext('2d');
+            charts.demographics = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['CIE (34%)', 'REE (26%)', 'Aerospace (17%)', 'SPC (11%)', 'Other (11%)'],
+                    datasets: [{
+                        data: [24, 18, 12, 8, 8],
+                        backgroundColor: [
+                            '#1e3c72',
+                            '#2a5298',
+                            '#FFD700',
+                            '#FFA500',
+                            '#28a745'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeRevenueChart() {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            charts.revenue = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Government (40%)', 'Corporate (45%)', 'Alternative (15%)'],
+                    datasets: [{
+                        data: [112000, 126000, 42000],
+                        backgroundColor: ['#1e3c72', '#FFD700', '#28a745'],
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed;
+                                    return `${context.label}: $${value.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeProjectionChart() {
+            const ctx = document.getElementById('projectionChart').getContext('2d');
+            charts.projection = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['2025', '2026', '2027', '2028', '2029'],
+                    datasets: [
+                        {
+                            label: 'Corporate Sponsors',
+                            data: [126000, 150000, 200000, 250000, 300000],
+                            borderColor: '#FFD700',
+                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3
+                        },
+                        {
+                            label: 'Government Funding',
+                            data: [112000, 130000, 160000, 180000, 200000],
+                            borderColor: '#1e3c72',
+                            backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3
+                        },
+                        {
+                            label: 'Self-Generated',
+                            data: [0, 10000, 30000, 60000, 100000],
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Revenue ($)',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000) + 'K';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeCompetitionAnalysisChart() {
+            const ctx = document.getElementById('competitionAnalysisChart').getContext('2d');
+            charts.competitionAnalysis = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Skills Competition', 'Design Award', 'Alliance Selection', 'Elimination Rounds', 'Championship'],
+                    datasets: [
+                        {
+                            label: 'Success Probability (%)',
+                            data: [95, 80, 75, 70, 40],
+                            backgroundColor: 'rgba(30, 60, 114, 0.8)',
+                            borderColor: '#1e3c72',
+                            borderWidth: 2,
+                            borderRadius: 8
+                        },
+                        {
+                            label: 'Target Performance (%)',
+                            data: [90, 85, 80, 75, 50],
+                            backgroundColor: 'rgba(255, 215, 0, 0.8)',
+                            borderColor: '#FFD700',
+                            borderWidth: 2,
+                            borderRadius: 8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Percentage (%)',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeTimelineChart() {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            charts.timeline = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [{
+                        label: 'Project Completion (%)',
+                        data: [10, 20, 35, 50, 60, 70, 80, 85, 90, 95, 98, 100],
+                        borderColor: '#1e3c72',
+                        backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#FFD700',
+                        pointBorderColor: '#1e3c72',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Completion (%)',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeEquipmentChart() {
+            const ctx = document.getElementById('equipmentChart').getContext('2d');
+            charts.equipment = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Manufacturing ($150K)', 'Electronics ($80K)', 'Competition ($50K)'],
+                    datasets: [{
+                        data: [150000, 80000, 50000],
+                        backgroundColor: ['#1e3c72', '#FFD700', '#28a745'],
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeUtilizationChart() {
+            const ctx = document.getElementById('utilizationChart').getContext('2d');
+            charts.utilization = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Workshop', 'Electronics', 'Practice Fields', 'Meeting Rooms', 'Storage'],
+                    datasets: [{
+                        label: 'Utilization (%)',
+                        data: [85, 75, 90, 60, 45],
+                        backgroundColor: [
+                            '#1e3c72',
+                            '#2a5298',
+                            '#FFD700',
+                            '#FFA500',
+                            '#28a745'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Utilization (%)',
+                                color: '#666',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Generate dynamic content functions
+        function generatePhaseProgress() {
+            const container = document.getElementById('phaseProgress');
+            const phases = dashboardData.phases;
+            
+            container.innerHTML = phases.map(phase => `
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span><strong>${phase.name}</strong> (${phase.period})</span>
+                        <span style="font-weight: bold; color: var(--primary-color);">${phase.probability}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${phase.progress}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));">
+                            ${phase.progress}%
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function generateTeamStructure() {
+            const container = document.getElementById('teamStructure');
+            const divisions = dashboardData.teamDivisions;
+            
+            container.innerHTML = divisions.map(division => `
+                <div class="team-division" onclick="editTeamDivision('${division.name}')">
+                    <div class="division-title">${division.name}</div>
+                    <div class="member-count">${division.members} Members</div>
+                    <div class="division-roles">${division.roles}</div>
+                </div>
+            `).join('');
+        }
+
+        function generateBudgetTable() {
+            const container = document.getElementById('budgetTable');
+            const budgetItems = dashboardData.budgetItems;
+            
+            const tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Percentage</th>
+                            <th>ROI Timeline</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${budgetItems.map(item => `
+                            <tr onclick="editBudgetItem('${item.category}')">
+                                <td><strong>${item.category}</strong></td>
+                                <td>$${item.amount.toLocaleString()}</td>
+                                <td>${item.percentage}%</td>
+                                <td>${getROITimeline(item.category)}</td>
+                                <td><span class="priority-${getPriority(item.category).toLowerCase()}">${getPriority(item.category)}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+
+        function generateTimelineContent() {
+            const container = document.getElementById('timelineContent');
+            const phases = dashboardData.phases;
+            
+            container.innerHTML = phases.map(phase => `
+                <div class="timeline-bar">
+                    <div class="phase-label">${phase.name}</div>
+                    <div class="timeline-track">
+                        <div class="timeline-progress phase-${phase.name.toLowerCase()}" style="width: ${getPhaseWidth(phase.name)}%;">
+                            ${phase.period}
+                        </div>
+                    </div>
+                    <div class="probability-badge">${phase.probability}%</div>
+                </div>
+            `).join('');
+        }
+
+        function generateMilestoneTracker() {
+            const container = document.getElementById('milestoneTracker');
+            const milestones = dashboardData.milestones;
+            
+            container.innerHTML = milestones.map(milestone => `
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span><strong>${milestone.name}</strong></span>
+                        <span style="font-size: 12px; color: var(--light-text);">${milestone.date}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${getMilestoneProgress(milestone)}%; background: ${getMilestoneColor(milestone.status)};">
+                            ${milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function generateFacilityLayout() {
+            const container = document.getElementById('facilityLayout');
+            const rooms = dashboardData.facilityRooms;
+            
+            container.innerHTML = rooms.map(room => `
+                <div class="facility-room" onclick="editFacilityRoom('${room.name}')">
+                    <div class="room-name"><strong>${room.name}</strong></div>
+                    <div class="room-size">${room.size} sqm</div>
+                    <div class="room-size">${room.purpose}</div>
+                </div>
+            `).join('');
+        }
+
+        function generateReports() {
+            generateExecutiveSummary();
+            generatePerformanceReport();
+            generateFinancialReport();
+        }
+
+        function generateExecutiveSummary() {
+            const container = document.getElementById('executiveSummary');
+            const totalMembers = dashboardData.teamDivisions.reduce((sum, div) => sum + div.members, 0);
+            const totalBudget = dashboardData.budgetItems.reduce((sum, item) => sum + item.amount, 0);
+            
+            container.innerHTML = `
+                <div style="padding: 20px; background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%); border-radius: 12px;">
+                    <h4 style="color: var(--primary-color); margin-bottom: 15px;">Executive Summary</h4>
+                    <p style="margin-bottom: 15px;">
+                        <strong>ZC Robotics Team</strong> represents a transformative initiative to establish Zewail City as Egypt's premier robotics powerhouse. 
+                        Building on our historic 2025 Judges Award victory, we are implementing a comprehensive multi-competition strategy targeting sustained international excellence.
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">${totalMembers}</div>
+                            <div style="color: var(--light-text);">Total Team Members</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">$${(totalBudget/1000).toFixed(0)}K</div>
+                            <div style="color: var(--light-text);">Total Investment</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">3</div>
+                            <div style="color: var(--light-text);">Competition Divisions</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">85%</div>
+                            <div style="color: var(--light-text);">Success Probability</div>
+                        </div>
+                    </div>
+                    
+                    <p style="margin-bottom: 10px;">
+                        <strong>Key Achievements Target:</strong> Top 10 VEX U World Championship placement, successful RoboCup qualification, 
+                        and establishment of permanent 1,050 sqm robotics facility with state-of-the-art manufacturing capabilities.
+                    </p>
+                    
+                    <p style="margin-bottom: 10px;">
+                        <strong>Strategic Impact:</strong> Position Egypt as a global leader in competitive robotics while developing 
+                        the next generation of engineering talent through comprehensive multi-competition programs.
+                    </p>
+                    
+                    <p>
+                        <strong>Timeline:</strong> 12-month implementation from June 2025 to May 2026, with legacy sustainability 
+                        planning extending through 2029.
+                    </p>
+                </div>
+            `;
+        }
+
+        function generatePerformanceReport() {
+            const container = document.getElementById('performanceReport');
+            const avgProbability = dashboardData.phases.reduce((sum, phase) => sum + phase.probability, 0) / dashboardData.phases.length;
+            
+            container.innerHTML = `
+                <div style="padding: 15px;">
+                    <h5 style="color: var(--primary-color); margin-bottom: 10px;">Performance Metrics</h5>
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Overall Success Probability</span>
+                            <strong>${avgProbability.toFixed(1)}%</strong>
+                        </div>
+                        <div class="progress-bar" style="height: 20px;">
+                            <div class="progress-fill" style="width: ${avgProbability}%; background: linear-gradient(90deg, var(--success-color), var(--info-color));">
+                                ${avgProbability.toFixed(1)}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 14px; color: var(--light-text);">
+                        <p>• Foundation Phase: ${dashboardData.phases[0].probability}% probability</p>
+                        <p>• Development Phase: ${dashboardData.phases[1].probability}% probability</p>
+                        <p>• Competition Phase: ${dashboardData.phases[2].probability}% probability</p>
+                        <p>• Legacy Phase: ${dashboardData.phases[3].probability}% probability</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateFinancialReport() {
+            const container = document.getElementById('financialReport');
+            const totalBudget = dashboardData.budgetItems.reduce((sum, item) => sum + item.amount, 0);
+            const largestCategory = dashboardData.budgetItems.reduce((max, item) => item.amount > max.amount ? item : max);
+            
+            container.innerHTML = `
+                <div style="padding: 15px;">
+                    <h5 style="color: var(--primary-color); margin-bottom: 10px;">Financial Overview</h5>
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Total Budget</span>
+                            <strong>$${totalBudget.toLocaleString()}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Largest Category</span>
+                            <strong>${largestCategory.category} (${largestCategory.percentage}%)</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Expected ROI</span>
+                            <strong>400%+</strong>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 14px; color: var(--light-text);">
+                        <p>• Infrastructure investment ensures long-term sustainability</p>
+                        <p>• Equipment purchases provide immediate operational capability</p>
+                        <p>• Competition expenses deliver direct performance results</p>
+                        <p>• Team development creates lasting human capital</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Utility functions
+        function getROITimeline(category) {
+            const timelines = {
+                'Infrastructure': '18-24 months',
+                'Equipment': '6-12 months',
+                'Competition': '3-6 months',
+                'Team Development': '12-18 months',
+                'Contingency': 'As needed'
+            };
+            return timelines[category] || 'TBD';
+        }
+
+        function getPriority(category) {
+            const priorities = {
+                'Infrastructure': 'HIGH',
+                'Equipment': 'HIGH',
+                'Competition': 'CRITICAL',
+                'Team Development': 'MEDIUM',
+                'Contingency': 'LOW'
+            };
+            return priorities[category] || 'MEDIUM';
+        }
+
+        function getPhaseWidth(phaseName) {
+            const widths = {
+                'Foundation': 33,
+                'Development': 42,
+                'Competition': 17,
+                'Legacy': 8
+            };
+            return widths[phaseName] || 25;
+        }
+
+        function getMilestoneProgress(milestone) {
+            const today = new Date();
+            const milestoneDate = new Date(milestone.date);
+            const daysDiff = Math.ceil((milestoneDate - today) / (1000 * 60 * 60 * 24));
+            
+            if (milestone.status === 'completed') return 100;
+            if (milestone.status === 'in-progress') return 50;
+            if (daysDiff < 0) return 100; // Past due
+            if (daysDiff < 30) return 25; // Coming soon
+            return 10; // Future
+        }
+
+        function getMilestoneColor(status) {
+            const colors = {
+                'completed': 'linear-gradient(90deg, var(--success-color), #20c997)',
+                'in-progress': 'linear-gradient(90deg, var(--warning-color), #fd7e14)',
+                'pending': 'linear-gradient(90deg, var(--info-color), #6610f2)',
+                'overdue': 'linear-gradient(90deg, var(--danger-color), #e83e8c)'
+            };
+            return colors[status] || colors['pending'];
+        }
+
+        // Edit functions
+        function editKPI(type) {
+            currentEditContext = { type: 'kpi', subtype: type };
+            const currentValue = dashboardData.kpis[type];
+            
+            document.getElementById('modalTitle').textContent = `Edit ${type.charAt(0).toUpperCase() + type.slice(1)} KPI`;
+            document.getElementById('modalContent').innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Current Value: ${currentValue}</label>
+                    <input type="text" class="input-field" id="editValue" value="${currentValue}" placeholder="Enter new value">
+                    <small style="color: var(--light-text);">Enter the new target value for this KPI</small>
+                </div>
+            `;
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function editAllKPIs() {
+            currentEditContext = { type: 'all-kpis' };
+            document.getElementById('modalTitle').textContent = 'Edit All KPIs';
+            document.getElementById('modalContent').innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">VEX U World Rank</label>
+                        <input type="text" class="input-field" id="kpi-rank-edit" value="${dashboardData.kpis.rank}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Success Probability (%)</label>
+                        <input type="number" class="input-field" id="kpi-success-edit" value="${dashboardData.kpis.success}" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Major Awards Target</label>
+                        <input type="number" class="input-field" id="kpi-awards-edit" value="${dashboardData.kpis.awards}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Media Followers Target</label>
+                        <input type="text" class="input-field" id="kpi-followers-edit" value="${dashboardData.kpis.followers}">
+                    </div>
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function editStatistic(type) {
+            currentEditContext = { type: 'statistic', subtype: type };
+            const currentValue = dashboardData.statistics[type];
+            
+            document.getElementById('modalTitle').textContent = `Edit ${type.charAt(0).toUpperCase() + type.slice(1)} Statistic`;
+            document.getElementById('modalContent').innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Current Value: ${currentValue}</label>
+                    <input type="number" class="input-field" id="editValue" value="${currentValue}" placeholder="Enter new value">
+                    <small style="color: var(--light-text);">Enter the new target value for this statistic</small>
+                </div>
+            `;
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function editPerformanceData() {
+            currentEditContext = { type: 'performance' };
+            document.getElementById('modalTitle').textContent = 'Edit Performance Data';
+            document.getElementById('modalContent').innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">VEX U Ranking (%)</label>
+                        <input type="number" class="input-field" id="perf1" value="90" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">RoboCup Qualification (%)</label>
+                        <input type="number" class="input-field" id="perf2" value="60" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NASA Competition (%)</label>
+                        <input type="number" class="input-field" id="perf3" value="80" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Awards Won (%)</label>
+                        <input type="number" class="input-field" id="perf4" value="85" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Media Reach (%)</label>
+                        <input type="number" class="input-field" id="perf5" value="75" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Growth (%)</label>
+                        <input type="number" class="input-field" id="perf6" value="95" min="0" max="100">
+                    </div>
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function editBudgetData() {
+            currentEditContext = { type: 'budget' };
+            document.getElementById('modalTitle').textContent = 'Edit Budget Allocation';
+            document.getElementById('modalContent').innerHTML = `
+                <div class="form-grid">
+                    ${dashboardData.budgetItems.map((item, index) => `
+                        <div class="form-group">
+                            <label class="form-label">${item.category} ($)</label>
+                            <input type="number" class="input-field" id="budget${index}" value="${item.amount}" min="0">
+                        </div>
+                    `).join('')}
+                </div>
+                <p style="margin-top: 15px; font-size: 14px; color: var(--light-text);">
+                    Total Budget: $<span id="budgetTotal">280,000</span>
+                </p>
+            `;
+            
+            // Add event listeners to update total
+            dashboardData.budgetItems.forEach((item, index) => {
+                const input = document.getElementById(`budget${index}`);
+                if (input) {
+                    input.addEventListener('input', updateBudgetTotal);
+                }
+            });
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function updateBudgetTotal() {
+            let total = 0;
+            dashboardData.budgetItems.forEach((item, index) => {
+                const input = document.getElementById(`budget${index}`);
+                if (input) {
+                    total += parseInt(input.value) || 0;
+                }
+            });
+            const totalElement = document.getElementById('budgetTotal');
+            if (totalElement) {
+                totalElement.textContent = total.toLocaleString();
+            }
+        }
+
+        function editRiskData() {
+            showNotification('Risk editing feature - customize risk probability and impact values', 'info');
+        }
+
+        function editPhaseData() {
+            currentEditContext = { type: 'phases' };
+            document.getElementById('modalTitle').textContent = 'Edit Phase Data';
+            document.getElementById('modalContent').innerHTML = `
+                <div class="form-grid">
+                    ${dashboardData.phases.map((phase, index) => `
+                        <div style="grid-column: 1 / -1; margin-bottom: 20px; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                            <h5 style="color: var(--primary-color); margin-bottom: 10px;">${phase.name} Phase</h5>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Progress (%)</label>
+                                    <input type="number" class="input-field" id="phase-progress-${index}" value="${phase.progress}" min="0" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Probability (%)</label>
+                                    <input type="number" class="input-field" id="phase-probability-${index}" value="${phase.probability}" min="0" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Period</label>
+                                    <input type="text" class="input-field" id="phase-period-${index}" value="${phase.period}">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function editTeamStructure() {
+            currentEditContext = { type: 'team-structure' };
+            document.getElementById('modalTitle').textContent = 'Edit Team Structure';
+            document.getElementById('modalContent').innerHTML = `
+                <div style="max-height: 400px; overflow-y: auto;">
+                    ${dashboardData.teamDivisions.map((division, index) => `
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Division Name</label>
+                                    <input type="text" class="input-field" id="team-name-${index}" value="${division.name}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Members</label>
+                                    <input type="number" class="input-field" id="team-members-${index}" value="${division.members}" min="0">
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label class="form-label">Roles & Responsibilities</label>
+                                    <input type="text" class="input-field" id="team-roles-${index}" value="${division.roles}">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function editFacilityLayout() {
+            currentEditContext = { type: 'facility' };
+            document.getElementById('modalTitle').textContent = 'Edit Facility Layout';
+            document.getElementById('modalContent').innerHTML = `
+                <div style="max-height: 400px; overflow-y: auto;">
+                    ${dashboardData.facilityRooms.map((room, index) => `
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9ff; border-radius: 8px;">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Room Name</label>
+                                    <input type="text" class="input-field" id="room-name-${index}" value="${room.name}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Size (sqm)</label>
+                                    <input type="number" class="input-field" id="room-size-${index}" value="${room.size}" min="0">
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label class="form-label">Purpose</label>
+                                    <input type="text" class="input-field" id="room-purpose-${index}" value="${room.purpose}">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function saveModalChanges() {
+            if (!currentEditContext) return;
+            
+            try {
+                switch (currentEditContext.type) {
+                    case 'kpi':
+                        const newValue = document.getElementById('editValue').value;
+                        dashboardData.kpis[currentEditContext.subtype] = newValue;
+                        document.getElementById(`kpi-${currentEditContext.subtype}`).textContent = newValue;
+                        break;
+                        
+                    case 'all-kpis':
+                        dashboardData.kpis.rank = document.getElementById('kpi-rank-edit').value;
+                        dashboardData.kpis.success = parseInt(document.getElementById('kpi-success-edit').value);
+                        dashboardData.kpis.awards = parseInt(document.getElementById('kpi-awards-edit').value);
+                        dashboardData.kpis.followers = document.getElementById('kpi-followers-edit').value;
+                        
+                        document.getElementById('kpi-rank').textContent = dashboardData.kpis.rank;
+                        document.getElementById('kpi-success').textContent = dashboardData.kpis.success + '%';
+                        document.getElementById('kpi-awards').textContent = dashboardData.kpis.awards + '+';
+                        document.getElementById('kpi-followers').textContent = dashboardData.kpis.followers;
+                        break;
+                        
+                    case 'statistic':
+                        const statValue = parseInt(document.getElementById('editValue').value);
+                        dashboardData.statistics[currentEditContext.subtype] = statValue;
+                        const displayValue = currentEditContext.subtype === 'budget' ? `${(statValue/1000).toFixed(0)}K` : statValue;
+                        document.getElementById(`stat-${currentEditContext.subtype}`).textContent = displayValue;
+                        break;
+                        
+                    case 'performance':
+                        const performanceData = [
+                            parseInt(document.getElementById('perf1').value),
+                            parseInt(document.getElementById('perf2').value),
+                            parseInt(document.getElementById('perf3').value),
+                            parseInt(document.getElementById('perf4').value),
+                            parseInt(document.getElementById('perf5').value),
+                            parseInt(document.getElementById('perf6').value)
+                        ];
+                        if (charts.performance) {
+                            charts.performance.data.datasets[0].data = performanceData;
+                            charts.performance.update();
+                        }
+                        break;
+                        
+                    case 'budget':
+                        dashboardData.budgetItems.forEach((item, index) => {
+                            const newAmount = parseInt(document.getElementById(`budget${index}`).value);
+                            item.amount = newAmount;
+                        });
+                        
+                        const total = dashboardData.budgetItems.reduce((sum, item) => sum + item.amount, 0);
+                        dashboardData.budgetItems.forEach(item => {
+                            item.percentage = Math.round((item.amount / total) * 100);
+                        });
+                        
+                        generateBudgetTable();
+                        if (charts.budget) {
+                            charts.budget.data.datasets[0].data = dashboardData.budgetItems.map(item => item.amount);
+                            charts.budget.data.labels = dashboardData.budgetItems.map(item => item.category);
+                            charts.budget.update();
+                        }
+                        break;
+                        
+                    case 'phases':
+                        dashboardData.phases.forEach((phase, index) => {
+                            phase.progress = parseInt(document.getElementById(`phase-progress-${index}`).value);
+                            phase.probability = parseInt(document.getElementById(`phase-probability-${index}`).value);
+                            phase.period = document.getElementById(`phase-period-${index}`).value;
+                        });
+                        generatePhaseProgress();
+                        break;
+                        
+                    case 'team-structure':
+                        dashboardData.teamDivisions.forEach((division, index) => {
+                            division.name = document.getElementById(`team-name-${index}`).value;
+                            division.members = parseInt(document.getElementById(`team-members-${index}`).value);
+                            division.roles = document.getElementById(`team-roles-${index}`).value;
+                        });
+                        generateTeamStructure();
+                        if (charts.team) {
+                            charts.team.data.datasets[0].data = dashboardData.teamDivisions.map(division => division.members);
+                            charts.team.data.labels = dashboardData.teamDivisions.map(division => division.name.replace(' Division', '').replace(' Team', ''));
+                            charts.team.update();
+                        }
+                        break;
+                        
+                    case 'facility':
+                        dashboardData.facilityRooms.forEach((room, index) => {
+                            room.name = document.getElementById(`room-name-${index}`).value;
+                            room.size = parseInt(document.getElementById(`room-size-${index}`).value);
+                            room.purpose = document.getElementById(`room-purpose-${index}`).value;
+                        });
+                        generateFacilityLayout();
+                        break;
+                }
+                
+                saveAllData();
+                generateReports(); // Refresh reports with new data
+                closeModal();
+                showNotification('Changes saved successfully!', 'success');
+                
+            } catch (error) {
+                showNotification('Error saving changes: ' + error.message, 'error');
+            }
+        }
+
+        function resetModalData() {
+            if (confirm('Are you sure you want to reset this data to default values?')) {
+                // Reload the modal with original data
+                showNotification('Data reset to defaults', 'warning');
+            }
+        }
+
+        function resetKPIs() {
+            if (confirm('Reset all KPIs to default values?')) {
+                dashboardData.kpis = {
+                    rank: 'Top 10',
+                    success: 75,
+                    awards: 5,
+                    followers: '500K'
+                };
+                
+                document.getElementById('kpi-rank').textContent = dashboardData.kpis.rank;
+                document.getElementById('kpi-success').textContent = dashboardData.kpis.success + '%';
+                document.getElementById('kpi-awards').textContent = dashboardData.kpis.awards + '+';
+                document.getElementById('kpi-followers').textContent = dashboardData.kpis.followers;
+                
+                saveAllData();
+                showNotification('KPIs reset successfully!', 'success');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditContext = null;
+        }
+
+        // Export functions
+        function exportChart(chartId) {
+            try {
+                const canvas = document.getElementById(chartId);
+                const url = canvas.toDataURL('image/png', 1.0);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ZC_Robotics_${chartId}_${new Date().toISOString().split('T')[0]}.png`;
+                a.click();
+                showNotification('Chart exported successfully!', 'success');
+            } catch (error) {
+                showNotification('Error exporting chart: ' + error.message, 'error');
+            }
+        }
+
+        function exportData(type) {
+            try {
+                let data;
+                let filename;
+                
+                switch (type) {
+                    case 'kpi':
+                        data = dashboardData.kpis;
+                        filename = 'ZC_Robotics_KPIs';
+                        break;
+                    case 'team':
+                        data = dashboardData.teamDivisions;
+                        filename = 'ZC_Robotics_Team_Structure';
+                        break;
+                    case 'budget':
+                        data = dashboardData.budgetItems;
+                        filename = 'ZC_Robotics_Budget';
+                        break;
+                    case 'facility':
+                        data = dashboardData.facilityRooms;
+                        filename = 'ZC_Robotics_Facility';
+                        break;
+                    default:
+                        data = dashboardData;
+                        filename = 'ZC_Robotics_All_Data';
+                }
+                
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${filename}_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showNotification(`${type.toUpperCase()} data exported successfully!`, 'success');
+            } catch (error) {
+                showNotification('Error exporting data: ' + error.message, 'error');
+            }
+        }
+
+        function exportAllCharts() {
+            const chartIds = ['performanceChart', 'budgetChart', 'riskChart', 'growthChart', 'teamChart', 'demographicsChart', 'revenueChart', 'projectionChart'];
+            let exportCount = 0;
+            
+            chartIds.forEach((chartId, index) => {
+                setTimeout(() => {
+                    if (document.getElementById(chartId)) {
+                        exportChart(chartId);
+                        exportCount++;
+                    }
+                }, index * 500); // Stagger exports
+            });
+            
+            setTimeout(() => {
+                showNotification(`${exportCount} charts exported successfully!`, 'success');
+            }, chartIds.length * 500 + 1000);
+        }
+
+        function exportAllData() {
+            exportData('all');
+        }
+
+        function exportPresentationPack() {
+            showNotification('Generating presentation pack...', 'info');
+            
+            // Export all charts first
+            exportAllCharts();
+            
+            // Then export data
+            setTimeout(() => {
+                exportAllData();
+                showNotification('Presentation pack exported! Check your downloads folder.', 'success');
+            }, 3000);
+        }
+
+        function exportExcel() {
+            // Create CSV format for Excel compatibility
+            try {
+                let csvContent = "ZC Robotics Team - Complete Data Export\n\n";
+                
+                // KPIs
+                csvContent += "Key Performance Indicators\n";
+                csvContent += "Metric,Target Value\n";
+                Object.entries(dashboardData.kpis).forEach(([key, value]) => {
+                    csvContent += `${key.charAt(0).toUpperCase() + key.slice(1)},${value}\n`;
+                });
+                
+                // Team Structure
+                csvContent += "\nTeam Structure\n";
+                csvContent += "Division,Members,Roles\n";
+                dashboardData.teamDivisions.forEach(division => {
+                    csvContent += `"${division.name}",${division.members},"${division.roles}"\n`;
+                });
+                
+                // Budget
+                csvContent += "\nBudget Breakdown\n";
+                csvContent += "Category,Amount,Percentage\n";
+                dashboardData.budgetItems.forEach(item => {
+                    csvContent += `${item.category},${item.amount},${item.percentage}%\n`;
+                });
+                
+                // Facility
+                csvContent += "\nFacility Layout\n";
+                csvContent += "Room,Size (sqm),Purpose\n";
+                dashboardData.facilityRooms.forEach(room => {
+                    csvContent += `"${room.name}",${room.size},"${room.purpose}"\n`;
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ZC_Robotics_Complete_Data_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showNotification('Excel file exported successfully!', 'success');
+            } catch (error) {
+                showNotification('Error exporting Excel file: ' + error.message, 'error');
+            }
+        }
+
+        function exportJSON() {
+            exportData('all');
+        }
+
+        function exportCSV() {
+            exportExcel(); // Same as Excel export for CSV
+        }
+
+        function exportDashboard() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ZC_Robotics_Dashboard_${new Date().toISOString().split('T')[0]}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Complete dashboard exported! You can open this file offline.', 'success');
+        }
+
+        function exportExecutiveSummary() {
+            const summaryContent = document.getElementById('executiveSummary').innerHTML;
+            const htmlDoc = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>ZC Robotics Team - Executive Summary</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+                        h1 { color: #1e3c72; border-bottom: 3px solid #FFD700; padding-bottom: 10px; }
+                        .summary { background: #f8f9ff; padding: 20px; border-radius: 8px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>ZC Robotics Team - Executive Summary</h1>
+                    <div class="summary">${summaryContent}</div>
+                    <p><small>Generated on ${new Date().toLocaleDateString()} | ZC Robotics Strategic Management Platform</small></p>
+                </body>
+                </html>
+            `;
+            
+            const blob = new Blob([htmlDoc], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ZC_Robotics_Executive_Summary_${new Date().toISOString().split('T')[0]}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Executive summary exported!', 'success');
+        }
+
+        // Utility functions
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        function animateChart(chartId) {
+            const chart = charts[chartId.replace('Chart', '')];
+            if (chart) {
+                chart.update('active');
+                showNotification('Chart animated!', 'success');
+            }
+        }
+
+        // Additional helper functions
+        function addTeamDivision() {
+            const newDivision = {
+                name: 'New Division',
+                members: 5,
+                roles: 'New roles and responsibilities'
+            };
+            dashboardData.teamDivisions.push(newDivision);
+            generateTeamStructure();
+            showNotification('New team division added!', 'success');
+        }
+
+        function addBudgetItem() {
+            const newItem = {
+                category: 'New Category',
+                amount: 10000,
+                percentage: 4
+            };
+            dashboardData.budgetItems.push(newItem);
+            generateBudgetTable();
+            showNotification('New budget item added!', 'success');
+        }
+
+        function addFacilityRoom() {
+            const newRoom = {
+                name: 'New Room',
+                size: 50,
+                purpose: 'New purpose'
+            };
+            dashboardData.facilityRooms.push(newRoom);
+            generateFacilityLayout();
+            showNotification('New facility room added!', 'success');
+        }
+
+        function addMilestone() {
+            const newMilestone = {
+                name: 'New Milestone',
+                date: new Date().toISOString().split('T')[0],
+                status: 'pending'
+            };
+            dashboardData.milestones.push(newMilestone);
+            generateMilestoneTracker();
+            showNotification('New milestone added!', 'success');
+        }
+
+        function updateTimeline() {
+            generateTimelineContent();
+            if (charts.timeline) {
+                charts.timeline.update();
+            }
+            showNotification('Timeline updated!', 'success');
+        }
+
+        // Initialize key event listeners
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+                saveAllData();
+            }
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Auto-save functionality
+        setInterval(() => {
+            saveAllData();
+        }, 300000); // Auto-save every 5 minutes
+
+        // Window beforeunload event
+        window.addEventListener('beforeunload', function(event) {
+            saveAllData();
+        });
+
+        // Debug and reload functions
+        function reloadAllCharts() {
+            showNotification('Reloading all charts...', 'info');
+            
+            // Clear existing charts
+            Object.keys(charts).forEach(key => {
+                if (charts[key] && charts[key].destroy) {
+                    charts[key].destroy();
+                }
+            });
+            charts = {};
+            
+            // Reinitialize after a short delay
+            setTimeout(() => {
+                try {
+                    initializeAllCharts();
+                    showNotification('All charts reloaded successfully!', 'success');
+                } catch (error) {
+                    showNotification('Chart reload failed: ' + error.message, 'error');
+                    console.error('Chart reload error:', error);
+                }
+            }, 500);
+        }
+
+        function toggleDebugInfo() {
+            let debugPanel = document.getElementById('debugPanel');
+            
+            if (debugPanel) {
+                debugPanel.remove();
+                return;
+            }
+            
+            // Create debug panel
+            debugPanel = document.createElement('div');
+            debugPanel.id = 'debugPanel';
+            debugPanel.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                width: 300px;
+                background: white;
+                border: 2px solid #1e3c72;
+                border-radius: 8px;
+                padding: 15px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                z-index: 3000;
+                font-size: 12px;
+                max-height: 400px;
+                overflow-y: auto;
+            `;
+            
+            const chartInfo = Object.keys(charts).map(key => {
+                const chart = charts[key];
+                const status = chart ? '✅ Loaded' : '❌ Failed';
+                return `${key}: ${status}`;
+            }).join('<br>');
+            
+            debugPanel.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: #1e3c72; margin: 0;">Debug Info</h4>
+                    <button onclick="toggleDebugInfo()" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">×</button>
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Chart.js Status:</strong><br>
+                    ${typeof Chart !== 'undefined' ? '✅ Loaded' : '❌ Not Loaded'}
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Charts Status:</strong><br>
+                    ${chartInfo || 'No charts initialized'}
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Data Status:</strong><br>
+                    KPIs: ${Object.keys(dashboardData.kpis || {}).length} items<br>
+                    Team Divisions: ${(dashboardData.teamDivisions || []).length} items<br>
+                    Budget Items: ${(dashboardData.budgetItems || []).length} items
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Browser Info:</strong><br>
+                    ${navigator.userAgent.split(' ').slice(-2).join(' ')}
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Actions:</strong><br>
+                    <button onclick="reloadAllCharts()" style="margin: 2px; padding: 4px 8px; background: #1e3c72; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Reload Charts</button><br>
+                    <button onclick="console.log('Dashboard Data:', dashboardData)" style="margin: 2px; padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Log Data</button><br>
+                    <button onclick="localStorage.clear(); location.reload();" style="margin: 2px; padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Reset All</button>
+                </div>
+            `;
+            
+            document.body.appendChild(debugPanel);
+        }
+
+        // Error handling for uncaught errors
+        window.addEventListener('error', function(event) {
+            console.error('Global error:', event.error);
+            showNotification('An error occurred: ' + event.message, 'error');
+        });
+
+        // Chart.js error handling
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.plugins.legend.onClick = function(event, legendItem, legend) {
+                console.log('Legend clicked:', legendItem);
+            };
+        }
+    </script>
+</body>
+</html>
